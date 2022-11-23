@@ -34,6 +34,16 @@ func parseArgs() ([]entry, bool, error) {
 	quality := INITIAL_QUALITY
 
 	for _, arg := range os.Args[1:] {
+		if expectQuality {
+			q, err := strconv.ParseFloat(arg, 64)
+			if err != nil {
+				return nil, false, fmt.Errorf("Expected a number after '-q', got %s", arg)
+			}
+			quality = q
+			expectQuality = false
+			continue
+		}
+
 		if strings.HasPrefix(arg, "-") {
 			flag, err := parseFlag(arg)
 			if err != nil {
@@ -51,18 +61,9 @@ func parseArgs() ([]entry, bool, error) {
 				panic(fmt.Errorf("Unhandled case for flag: %s", arg))
 			}
 		} else {
-			if expectQuality {
-				q, err := strconv.ParseFloat(arg, 64)
-				if err != nil {
-					return nil, false, fmt.Errorf("Expected a number after '-q', got %s", arg)
-				}
-				quality = q
-				expectQuality = false
-			} else {
-				// Regular argument
-				entries = append(entries, entry{name: arg, q: quality})
-				quality = INITIAL_QUALITY
-			}
+			// Regular argument
+			entries = append(entries, entry{name: arg, q: quality})
+			quality = INITIAL_QUALITY
 		}
 	}
 
