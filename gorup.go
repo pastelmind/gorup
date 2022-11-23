@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -37,6 +38,7 @@ func run() int {
 		fmt.Printf("%-20s: %7.3f%%\n", e.name, e.q/total*100)
 	}
 
+	fmt.Println(strings.Repeat("=", 40))
 	fmt.Printf("%s (rolled %f)\n", e.name, roll)
 	return 0
 }
