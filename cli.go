@@ -35,20 +35,42 @@ func (e constError) Error() string { return string(e) }
 // Constant error that indicates the user requested a help message
 const eHelp = constError("Help")
 
-func parseArgs() ([]entry, error) {
-	const INITIAL_QUALITY float64 = 1.0
+func parseEntries() ([]entry, error) {
+	args, err := parseArgs()
+	if err != nil {
+		return nil, err
+	}
 
 	var entries []entry
-	expectQuality := false
-	quality := INITIAL_QUALITY
 
+	const INITIAL_QUALITY float64 = 1.0
+	quality := INITIAL_QUALITY
+	for _, arg := range args {
+		switch a := arg.(type) {
+		case aName:
+			entries = append(entries, entry{name: string(a), q: quality})
+			quality = INITIAL_QUALITY
+		case aQuality:
+			quality = float64(a)
+		default:
+			panic(fmt.Errorf("Unhandled cliArg: %T", a))
+		}
+	}
+
+	return entries, nil
+}
+
+func parseArgs() ([]cliArg, error) {
+	var args []cliArg
+
+	expectQuality := false
 	for _, arg := range os.Args[1:] {
 		if expectQuality {
 			q, err := strconv.ParseFloat(arg, 64)
 			if err != nil {
 				return nil, fmt.Errorf("Expected a number after '-q', got %s", arg)
 			}
-			quality = q
+			args = append(args, aQuality(q))
 			expectQuality = false
 			continue
 		}
@@ -78,15 +100,14 @@ func parseArgs() ([]entry, error) {
 				if err != nil {
 					return nil, fmt.Errorf("Expected a number after '-q', got %s", suffix)
 				}
-				quality = q
+				args = append(args, aQuality(q))
 				continue
 			}
 
 			return nil, fmt.Errorf("Unknown flag: %s", arg)
 		} else {
-			// Regular argument
-			entries = append(entries, entry{name: arg, q: quality})
-			quality = INITIAL_QUALITY
+			// Regular argument (i.e. name)
+			args = append(args, aName(arg))
 		}
 	}
 
@@ -94,5 +115,16 @@ func parseArgs() ([]entry, error) {
 		return nil, errors.New("No number after last '-q'")
 	}
 
-	return entries, nil
+	return args, nil
 }
+
+// Dummy interface for sum type of CLI arguments
+type cliArg interface {
+	isCliArg()
+}
+
+type aName string
+type aQuality float64
+
+func (aName) isCliArg()    {}
+func (aQuality) isCliArg() {}

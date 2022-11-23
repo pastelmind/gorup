@@ -11,7 +11,7 @@ func main() {
 }
 
 func run() int {
-	entries, err := parseArgs()
+	entries, err := parseEntries()
 
 	if err != nil && err != eHelp {
 		fmt.Println(err)
