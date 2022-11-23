@@ -45,21 +45,35 @@ func parseArgs() ([]entry, bool, error) {
 		}
 
 		if strings.HasPrefix(arg, "-") {
-			flag, err := parseFlag(arg)
-			if err != nil {
-				return nil, false, err
+			flagBody := arg[1:]
+			if strings.HasPrefix(arg, "--") {
+				flagBody = arg[2:]
 			}
 
-			switch v := flag.(type) {
-			case fHelp:
-				return nil, true, nil
-			case fQualityBegin:
-				expectQuality = true
-			case fQuality:
-				quality = float64(v)
-			default:
-				panic(fmt.Errorf("Unhandled case for flag: %s", arg))
+			if flagBody == "" {
+				return nil, false, errors.New("Missing flag after '-'")
 			}
+
+			if flagBody == "h" || flagBody == "help" {
+				return nil, true, nil
+			}
+
+			if strings.HasPrefix(flagBody, "q") {
+				suffix := flagBody[1:]
+				if len(suffix) == 0 {
+					expectQuality = true
+					continue
+				}
+
+				q, err := strconv.ParseFloat(suffix, 64)
+				if err != nil {
+					return nil, false, fmt.Errorf("Expected a number after '-q', got %s", suffix)
+				}
+				quality = q
+				continue
+			}
+
+			return nil, false, fmt.Errorf("Unknown flag: %s", arg)
 		} else {
 			// Regular argument
 			entries = append(entries, entry{name: arg, q: quality})
@@ -73,55 +87,3 @@ func parseArgs() ([]entry, bool, error) {
 
 	return entries, false, nil
 }
-
-func parseFlag(flag string) (flagType, error) {
-	var flagBody string
-	if strings.HasPrefix(flag, "--") {
-		flagBody = flag[2:]
-	} else {
-		flagBody = flag[1:]
-	}
-
-	if flagBody == "" {
-		return nil, errors.New("Missing flag after '-'")
-	}
-
-	if flagBody == "h" || flagBody == "help" {
-		return fHelp(struct{}{}), nil
-	}
-
-	if flagBody == "q" {
-		return fQualityBegin(struct{}{}), nil
-	}
-
-	if strings.HasPrefix(flagBody, "q") {
-		quality, err := strconv.ParseFloat(flagBody[1:], 64)
-		if err != nil {
-			return nil, fmt.Errorf("Invalid suffix for -q flag: %w", err)
-		}
-
-		return fQuality(quality), nil
-	}
-
-	return nil, fmt.Errorf("Unknown flag: %s", flag)
-}
-
-// Interface for CLI flags
-type flagType interface {
-	// Dummy method for identifying flags
-	isFlag()
-}
-
-// Flag type for help (-h, --help).
-type fHelp struct{}
-
-// Flag type for -q without a number suffix.
-type fQualityBegin struct{}
-
-// Flag type for -q with a number suffix (ex: -q1, -q2.5).
-// The contained value is the number
-type fQuality float64
-
-func (fHelp) isFlag()         {}
-func (fQualityBegin) isFlag() {}
-func (fQuality) isFlag()      {}
