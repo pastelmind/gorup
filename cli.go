@@ -73,7 +73,7 @@ func parseArgs() ([]entry, bool, error) {
 	return entries, false, nil
 }
 
-func parseFlag(flag string) (interface{}, error) {
+func parseFlag(flag string) (flagType, error) {
 	var flagBody string
 	if strings.HasPrefix(flag, "--") {
 		flagBody = flag[2:]
@@ -105,7 +105,26 @@ func parseFlag(flag string) (interface{}, error) {
 	return fUnknown(struct{}{}), nil
 }
 
+// Interface for CLI flags
+type flagType interface {
+	// Dummy method for identifying flags
+	isFlag()
+}
+
+// Flag type for help (-h, --help).
 type fHelp struct{}
+
+// Flag type for -q without a number suffix.
 type fQualityBegin struct{}
+
+// Flag type for -q with a number suffix (ex: -q1, -q2.5).
+// The contained value is the number
 type fQuality float64
+
+// Flag type for unknown flags.
 type fUnknown struct{}
+
+func (fHelp) isFlag()         {}
+func (fQualityBegin) isFlag() {}
+func (fQuality) isFlag()      {}
+func (fUnknown) isFlag()      {}
