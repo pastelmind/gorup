@@ -48,7 +48,7 @@ func parseArgs() ([]entry, bool, error) {
 			case fQuality:
 				quality = float64(v)
 			default:
-				return nil, false, fmt.Errorf("Unknown flag: %s", arg)
+				panic(fmt.Errorf("Unhandled case for flag: %s", arg))
 			}
 		} else {
 			if expectQuality {
@@ -102,7 +102,7 @@ func parseFlag(flag string) (flagType, error) {
 		return fQuality(quality), nil
 	}
 
-	return fUnknown(struct{}{}), nil
+	return nil, fmt.Errorf("Unknown flag: %s", flag)
 }
 
 // Interface for CLI flags
@@ -121,10 +121,6 @@ type fQualityBegin struct{}
 // The contained value is the number
 type fQuality float64
 
-// Flag type for unknown flags.
-type fUnknown struct{}
-
 func (fHelp) isFlag()         {}
 func (fQualityBegin) isFlag() {}
 func (fQuality) isFlag()      {}
-func (fUnknown) isFlag()      {}
