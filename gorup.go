@@ -11,14 +11,15 @@ func main() {
 }
 
 func run() int {
-	entries, showHelp, err := parseArgs()
-	if err != nil {
+	entries, err := parseArgs()
+
+	if err != nil && err != eHelp {
 		fmt.Println(err)
 		fmt.Println("Pass -h or --help to see usage")
 		return 1
 	}
 
-	if showHelp || len(entries) == 0 {
+	if err == eHelp || len(entries) == 0 {
 		printHelp()
 		return 0
 	}

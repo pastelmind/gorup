@@ -26,7 +26,16 @@ Examples:
 To see this message, use -h or --help.`)
 }
 
-func parseArgs() ([]entry, bool, error) {
+// Constant error type.
+// See https://dave.cheney.net/2016/04/07/constant-errors for an explanation.
+type constError string
+
+func (e constError) Error() string { return string(e) }
+
+// Constant error that indicates the user requested a help message
+const eHelp = constError("Help")
+
+func parseArgs() ([]entry, error) {
 	const INITIAL_QUALITY float64 = 1.0
 
 	var entries []entry
@@ -37,7 +46,7 @@ func parseArgs() ([]entry, bool, error) {
 		if expectQuality {
 			q, err := strconv.ParseFloat(arg, 64)
 			if err != nil {
-				return nil, false, fmt.Errorf("Expected a number after '-q', got %s", arg)
+				return nil, fmt.Errorf("Expected a number after '-q', got %s", arg)
 			}
 			quality = q
 			expectQuality = false
@@ -51,11 +60,11 @@ func parseArgs() ([]entry, bool, error) {
 			}
 
 			if flagBody == "" {
-				return nil, false, errors.New("Missing flag after '-'")
+				return nil, errors.New("Missing flag after '-'")
 			}
 
 			if flagBody == "h" || flagBody == "help" {
-				return nil, true, nil
+				return nil, eHelp
 			}
 
 			if strings.HasPrefix(flagBody, "q") {
@@ -67,13 +76,13 @@ func parseArgs() ([]entry, bool, error) {
 
 				q, err := strconv.ParseFloat(suffix, 64)
 				if err != nil {
-					return nil, false, fmt.Errorf("Expected a number after '-q', got %s", suffix)
+					return nil, fmt.Errorf("Expected a number after '-q', got %s", suffix)
 				}
 				quality = q
 				continue
 			}
 
-			return nil, false, fmt.Errorf("Unknown flag: %s", arg)
+			return nil, fmt.Errorf("Unknown flag: %s", arg)
 		} else {
 			// Regular argument
 			entries = append(entries, entry{name: arg, q: quality})
@@ -82,8 +91,8 @@ func parseArgs() ([]entry, bool, error) {
 	}
 
 	if expectQuality {
-		return nil, false, errors.New("No number after last '-q'")
+		return nil, errors.New("No number after last '-q'")
 	}
 
-	return entries, false, nil
+	return entries, nil
 }
